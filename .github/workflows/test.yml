@@ -218,7 +218,7 @@ jobs:
         run: cargo set-version --workspace $TAG_NAME
       - name: Dry run cargo publish
         run: |
-          cargo publish --dry-run --allow-dirty
+          cargo publish --workspace --dry-run --allow-dirty
 
   results:
     permissions:

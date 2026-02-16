@@ -105,10 +105,12 @@ impl DefType {
 				| "CursorImage"  // contains Image<'a>
 				| "EasingFunction"  // contains LinearFunction<'a> with CommaSeparated
 				// Types that reference other allocating types
-				| "LineWidthOrRepeat"  // contains Repeat<'a>
-				| "LineWidthList"  // contains LineWidthOrRepeat<'a>
-				| "AutoLineWidthList"  // contains Repeat<'a> and LineWidthOrRepeat<'a>
-				| "FamilyName"  // may contain allocating elements
+					| "LineWidthOrRepeat"  // contains Repeat<'a>
+					| "LineWidthList"  // contains LineWidthOrRepeat<'a>
+					| "AutoLineWidthList"  // contains Repeat<'a> and LineWidthOrRepeat<'a>
+					| "GapRuleList"  // contains Vec<'a, ...>
+					| "GapAutoRuleList"  // contains Vec<'a, ...>
+					| "FamilyName"  // may contain allocating elements
 				| "BgImage"  // contains Image<'a>
 				| "DynamicRangeLimit"  // contains DynamicRangeLimitMixFunction<'a>
 				| "DynamicRangeLimitMixFunction"  // contains allocating params
@@ -335,7 +337,8 @@ impl Def {
 						| "ScrollTimelineName"
 						| "ViewTimelineAxis"
 						| "ViewTimelineName"
-						| "BorderTopClip"
+						| "BorderTopClip" | "ColumnRule"
+						| "RowRule"
 				)
 			}
 			Self::AutoOr(d) | Self::NoneOr(d) | Self::AutoNoneOr(d) | Self::NormalOr(d) => d.maybe_unsized(),
@@ -398,6 +401,13 @@ impl Def {
 					}
 					// "<length-percentage> | <flex>" can be simplified to "<length-percentage-or-flex>"
 					(Def::Type(type1), Def::Type(type2)) => match (type1.ident_str(), type2.ident_str()) {
+						// "<gap-rule-list> | <gap-auto-rule-list>" can be flattened to "<gap-rule-list>"
+						("GapRuleList", "GapAutoRuleList") => {
+							Def::Type(DefType::new("GapRuleList", type1.range.clone()))
+						}
+						("GapAutoRuleList", "GapRuleList") => {
+							Def::Type(DefType::new("GapRuleList", type2.range.clone()))
+						}
 						("LengthPercentage", "Flex") | ("Flex", "LengthPercentage") => {
 							Def::Type(DefType::new("LengthPercentageOrFlex", type1.range.clone()))
 						}

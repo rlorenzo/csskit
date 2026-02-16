@@ -204,6 +204,18 @@ fn def_optimizes_lengthpercentage_or_flex_to_lengthpercentageorflex_type() {
 }
 
 #[test]
+fn def_optimizes_gap_rule_list_or_gap_auto_rule_list_to_gap_rule_list_type() {
+	assert_eq!(
+		to_valuedef! { <gap-rule-list> | <gap-auto-rule-list> },
+		Def::Type(DefType::new("GapRuleList", DefRange::None))
+	);
+	assert_eq!(
+		to_valuedef! { <gap-auto-rule-list> | <gap-rule-list> },
+		Def::Type(DefType::new("GapRuleList", DefRange::None))
+	);
+}
+
+#[test]
 fn def_optimizes_length_or_auto_range_to_ordered_combinator_lengthorauto_type() {
 	assert_eq!(
 		to_valuedef! { [ auto | <length-percentage> ]{1,4} },
