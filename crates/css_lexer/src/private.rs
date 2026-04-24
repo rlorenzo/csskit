@@ -580,8 +580,9 @@ impl<'a> ByteCursor<'a> {
 				let c = self.peek_char();
 				let (_, c2, c3) = if c == EOF && self.at_end() { (EOF, EOF, EOF) } else { self.peek3() };
 				if is_ident_start_sequence(c, c2, c3) {
-					let (unit_len, _, _, _, atom, _) = self.consume_ident_sequence(atoms);
-					Token::new_dimension(is_float, has_sign, num_len as u32, unit_len, value, atom as u8)
+					let (unit_len, _, _, _, atom_bits, _) = self.consume_ident_sequence(atoms);
+					let atom = if atom_bits <= 127 { atom_bits as u8 } else { 0 };
+					Token::new_dimension(is_float, has_sign, num_len as u32, unit_len, value, atom)
 				} else {
 					Token::new_number(is_float, has_sign, num_len as u32, value)
 				}
