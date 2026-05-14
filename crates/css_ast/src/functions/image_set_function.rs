@@ -45,7 +45,7 @@ mod tests {
 
 	#[test]
 	fn test_writes() {
-		assert_parse!(CssAtomSet::ATOMS, ImageSetFunction, "image-set('image.jpg'1x,'image.jpg'2x)");
+		assert_parse!(CssAtomSet::ATOMS, ImageSetFunction, "image-set('image.jpg' 1x,'image.jpg' 2x)");
 		assert_parse!(
 			CssAtomSet::ATOMS,
 			ImageSetFunction,

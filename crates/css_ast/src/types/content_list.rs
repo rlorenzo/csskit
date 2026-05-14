@@ -79,7 +79,7 @@ mod tests {
 		assert_parse!(CssAtomSet::ATOMS, ContentList, "content(marker)");
 		assert_parse!(CssAtomSet::ATOMS, ContentList, "counter(foo,decimal)");
 		assert_parse!(CssAtomSet::ATOMS, ContentList, "counters(foo,'bar',decimal)");
-		assert_parse!(CssAtomSet::ATOMS, ContentList, "leader('.')'foo'counter(section,decimal)");
+		assert_parse!(CssAtomSet::ATOMS, ContentList, "leader('.')'foo' counter(section,decimal)");
 		assert_parse!(CssAtomSet::ATOMS, ContentList, "attr(foo)");
 	}
 

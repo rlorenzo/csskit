@@ -1080,6 +1080,12 @@ impl Token {
 	/// order to avoid abmiguities with CSS-alike languages that treat two consecutive `/` characters as a single line
 	/// comment.
 	///
+	/// A second exception not in the spec table: a `<string-token>` followed by `<ident>`, `<function>`, `<url>`,
+	/// `<bad-url>`, `<number>`, or `<dimension>` is also separated. Strings are self-delimited by quotes so
+	/// re-tokenization is unambiguous, but value grammars like `font-variation-settings` (`<string> <number>`) and
+	/// `font-feature-settings` (`<string> [ <integer> | on | off ]?`) require juxtaposition, and WebKit rejects
+	/// `"opsz"14` without the space.
+	///
 	/// # Example
 	///
 	/// ```
@@ -1124,6 +1130,10 @@ impl Token {
 				) || matches!(second.char(), Some('%'))
 					|| second.is_cdc()
 			}
+			Kind::String => matches!(
+				second.kind(),
+				Kind::Ident | Kind::Function | Kind::Url | Kind::BadUrl | Kind::Number | Kind::Dimension
+			),
 			_ => match self.char() {
 				Some('#') => {
 					matches!(

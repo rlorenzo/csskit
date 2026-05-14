@@ -116,8 +116,8 @@ mod tests {
 		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|='foo']");
 		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|=foo i]");
 		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|=foo s]");
-		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|='foo'i]");
-		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|='foo's]");
+		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|='foo' i]");
+		assert_parse!(CssAtomSet::ATOMS, Attribute, "[attr|='foo' s]");
 	}
 
 	#[cfg(feature = "css_feature_data")]

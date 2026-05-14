@@ -213,4 +213,12 @@ mod test {
 		assert_format!("foo  ", "foo");
 		assert_format!("foo; ", "foo;");
 	}
+
+	// WebKit rejects `font-variation-settings: "opsz"14` because the value grammar requires
+	// `<string> <number>` to be juxtaposed. Same for `font-feature-settings`.
+	#[test]
+	fn test_preserves_whitespace_after_string() {
+		assert_format!("font-variation-settings: 'opsz' 14", r#"font-variation-settings:"opsz" 14"#);
+		assert_format!("font-feature-settings: 'liga' on", r#"font-feature-settings:"liga" on"#);
+	}
 }
