@@ -33,6 +33,13 @@ impl Check {
 			todo!()
 		}
 
+		if input.is_empty() {
+			eprintln!("error: no CSS files to check");
+			eprintln!("usage: csskit check <rules.cks> <file1.css> [more.css...]");
+			print_sheet_arg_hint(sheet, false);
+			return Err(CliError::ParseFailed);
+		}
+
 		let bump = Bump::new();
 
 		// Read and parse the csskit sheet
@@ -44,6 +51,7 @@ impl Check {
 			if let Some(e) = rule_result.errors.first() {
 				eprintln!("{}", format_diagnostic_error(e, &rule_source, sheet));
 			}
+			print_sheet_arg_hint(sheet, true);
 			CliError::ParseFailed
 		})?;
 
@@ -117,5 +125,15 @@ impl Check {
 
 		// Return error if we encountered any error-level diagnostics
 		if error_count > 0 { Err(CliError::Checks(error_count)) } else { Ok(()) }
+	}
+}
+
+fn print_sheet_arg_hint(sheet: &str, with_correction: bool) {
+	if !sheet.ends_with(".css") {
+		return;
+	}
+	eprintln!("hint: `{sheet}` looks like a CSS file. The first argument is the csskit rule sheet (.cks).");
+	if with_correction {
+		eprintln!("      To check CSS files, pass a rule sheet first: csskit check rules.cks {sheet} [more.css...]");
 	}
 }
