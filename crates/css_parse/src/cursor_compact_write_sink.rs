@@ -1,4 +1,6 @@
-use crate::{Cursor, CursorSink, Kind, KindSet, QuoteStyle, SourceCursor, SourceCursorSink, Token};
+use crate::{
+	AssociatedWhitespaceRules, Cursor, CursorSink, Kind, KindSet, QuoteStyle, SourceCursor, SourceCursorSink, Token,
+};
 
 /// This is a [CursorSink] that wraps a sink (`impl SourceCursorSink`) and on each [CursorSink::append()] call, will write
 /// the contents of the cursor [Cursor] given into the given sink - using the given `&'a str` as the original source.
@@ -31,10 +33,22 @@ impl<'a, T: SourceCursorSink<'a>> CursorCompactWriteSink<'a, T> {
 			self.pending = None;
 			let is_redundant_semi = prev == Kind::Semicolon
 				&& (c == REDUNDANT_SEMI_KINDSET || self.last_token.is_some_and(|c| c == REDUNDANT_SEMI_KINDSET));
-			let no_whitespace_after_last =
-				prev == Kind::Whitespace && self.last_token.is_some_and(|c| c == NO_WHITESPACE_AFTER_KINDSET);
+			// Honor `AssociatedWhitespaceRules` set by upstream parsers: if the last token
+			// requires whitespace after it or the next token requires whitespace before it,
+			// the pending whitespace must be preserved even when the surrounding token kinds
+			// would otherwise allow trimming. This is how spec-required whitespace (e.g.
+			// around `+`/`-` in `calc()`) survives minification.
+			let prev_is_whitespace = prev == Kind::Whitespace;
+			let whitespace_required = prev_is_whitespace
+				&& (self.last_token.is_some_and(|t| t == AssociatedWhitespaceRules::EnforceAfter)
+					|| c.token() == AssociatedWhitespaceRules::EnforceBefore);
+			let no_whitespace_after_last = prev_is_whitespace
+				&& !whitespace_required
+				&& self.last_token.is_some_and(|c| c == NO_WHITESPACE_AFTER_KINDSET);
 			let is_redundant_whitespace = self.last_token.is_none()
-				|| prev == Kind::Whitespace && (c == NO_WHITESPACE_BEFORE_KINDSET || no_whitespace_after_last);
+				|| prev_is_whitespace
+					&& !whitespace_required
+					&& (c == NO_WHITESPACE_BEFORE_KINDSET || no_whitespace_after_last);
 			if !is_redundant_semi && !is_redundant_whitespace {
 				self.last_token = Some(prev.token());
 				self.sink.append(prev.compact());
@@ -162,6 +176,21 @@ mod test {
 	fn test_removes_whitespace_after_right_paren() {
 		assert_format!("foo() bar", "foo()bar");
 		assert_format!("rgb(0, 0, 0) solid", "rgb(0,0,0)solid");
+	}
+
+	#[test]
+	fn test_preserves_whitespace_around_calc_sum_operators() {
+		// The CSS spec requires whitespace around `+` and `-` in calc() <calc-sum>; without
+		// it, WebKit treats the expression as invalid. See:
+		// https://www.w3.org/TR/css-values-4/#calc-syntax
+		//
+		// Calc bodies are parsed by the dedicated `CalcExpression` AST, which forces
+		// `EnforceBefore | EnforceAfter` on `+`/`-` operators (spec-required) and leaves
+		// `*`/`/` operators alone so they minify down to the most compact form.
+		assert_format!("calc(var(--col-gap) / 2 + var(--date-col))", "calc(var(--col-gap)/2 + var(--date-col))");
+		assert_format!("calc((var(--col-gap) / -2) - 5px)", "calc((var(--col-gap)/-2) - 5px)");
+		assert_format!("calc(var(--x) + 1px)", "calc(var(--x) + 1px)");
+		assert_format!("calc(var(--x) - 1px)", "calc(var(--x) - 1px)");
 	}
 
 	#[test]

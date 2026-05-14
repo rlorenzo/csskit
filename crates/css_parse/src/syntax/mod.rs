@@ -1,6 +1,7 @@
 mod bad_declaration;
 mod bang_important;
 mod block;
+mod calc;
 mod comma_separated;
 mod component_value;
 mod component_values;
@@ -20,6 +21,7 @@ mod unknown_rule_block;
 pub use bad_declaration::*;
 pub use bang_important::*;
 pub use block::*;
+pub use calc::*;
 pub use comma_separated::*;
 pub use component_value::*;
 pub use component_values::*;

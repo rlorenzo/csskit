@@ -1,6 +1,6 @@
 use crate::{
-	AssociatedWhitespaceRules, Cursor, CursorSink, Diagnostic, FunctionBlock, Kind, KindSet, Parse, Parser, Peek,
-	Result as ParserResult, SemanticEq, SimpleBlock, Span, State, T, ToCursors, ToSpan,
+	AssociatedWhitespaceRules, CalcExpression, Cursor, CursorSink, Diagnostic, FunctionBlock, Kind, KindSet, Parse,
+	Parser, Peek, Result as ParserResult, SemanticEq, SimpleBlock, Span, State, T, ToCursors, ToSpan,
 };
 
 /// <https://drafts.csswg.org/css-syntax-3/#consume-component-value>
@@ -11,6 +11,11 @@ use crate::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize), serde(untagged))]
 pub enum ComponentValue<'a> {
 	SimpleBlock(SimpleBlock<'a>),
+	/// A `calc()`/`min()`/`max()`/`clamp()`/`mod()`/`rem()` math expression,
+	/// parsed into a structured tree so spec-required whitespace around
+	/// `+`/`-` operators is preserved on serialization. Other function calls
+	/// land in [Self::Function] as a generic [FunctionBlock].
+	Calc(CalcExpression<'a>),
 	Function(FunctionBlock<'a>),
 	Whitespace(T![Whitespace]),
 	Number(T![Number]),
@@ -61,6 +66,20 @@ impl<'a> Parse<'a> for ComponentValue<'a> {
 			let block = p.parse::<SimpleBlock>();
 			p.set_state(old_state);
 			Self::SimpleBlock(block?)
+		} else if <CalcExpression<'a>>::peek(p, c) {
+			// Try the structured calc tree first so spec-required whitespace around
+			// `+`/`-` operators survives minification. If the body doesn't match the
+			// calc grammar (e.g. `calc(5px+1px)` where the lexer produced a single
+			// `+1px` signed dimension token), fall back to a lossless FunctionBlock so
+			// the declaration isn't dropped.
+			let checkpoint = p.checkpoint();
+			match p.parse::<CalcExpression>() {
+				Ok(calc) => Self::Calc(calc),
+				Err(_) => {
+					p.rewind(checkpoint);
+					Self::Function(p.parse::<FunctionBlock>()?)
+				}
+			}
 		} else if <T![Function]>::peek(p, c) {
 			Self::Function(p.parse::<FunctionBlock>()?)
 		} else if <T![Number]>::peek(p, c) {
@@ -104,6 +123,7 @@ impl<'a> ToCursors for ComponentValue<'a> {
 	fn to_cursors(&self, s: &mut impl CursorSink) {
 		match self {
 			Self::SimpleBlock(t) => ToCursors::to_cursors(t, s),
+			Self::Calc(t) => ToCursors::to_cursors(t, s),
 			Self::Function(t) => ToCursors::to_cursors(t, s),
 			Self::Ident(t) => ToCursors::to_cursors(t, s),
 			Self::AtKeyword(t) => ToCursors::to_cursors(t, s),
@@ -125,6 +145,7 @@ impl<'a> ToSpan for ComponentValue<'a> {
 	fn to_span(&self) -> Span {
 		match self {
 			Self::SimpleBlock(t) => t.to_span(),
+			Self::Calc(t) => t.to_span(),
 			Self::Function(t) => t.to_span(),
 			Self::Ident(t) => t.to_span(),
 			Self::AtKeyword(t) => t.to_span(),
@@ -146,6 +167,7 @@ impl<'a> SemanticEq for ComponentValue<'a> {
 	fn semantic_eq(&self, other: &Self) -> bool {
 		match (self, other) {
 			(Self::SimpleBlock(a), Self::SimpleBlock(b)) => a.semantic_eq(b),
+			(Self::Calc(a), Self::Calc(b)) => a.semantic_eq(b),
 			(Self::Function(a), Self::Function(b)) => a.semantic_eq(b),
 			(Self::Number(a), Self::Number(b)) => a.semantic_eq(b),
 			(Self::Dimension(a), Self::Dimension(b)) => a.semantic_eq(b),
