@@ -57,6 +57,48 @@ where
 	format!("{}", text.on_truecolor(srgb.red, srgb.green, srgb.blue))
 }
 
+#[cfg(feature = "anstyle")]
+pub fn red<T: std::fmt::Display>(text: T) -> String {
+	use anstyle::{AnsiColor, Style};
+	let style = Style::new().fg_color(Some(anstyle::Color::Ansi(AnsiColor::Red)));
+	format!("{style}{text}{style:#}")
+}
+
+#[cfg(feature = "owo-colors")]
+#[cfg(not(feature = "anstyle"))]
+pub fn red<T: std::fmt::Display>(text: T) -> String {
+	use owo_colors::OwoColorize;
+	format!("{}", text.red())
+}
+
+#[cfg(feature = "anstyle")]
+pub fn bold_red<T: std::fmt::Display>(text: T) -> String {
+	use anstyle::{AnsiColor, Style};
+	let style = Style::new().bold().fg_color(Some(anstyle::Color::Ansi(AnsiColor::Red)));
+	format!("{style}{text}{style:#}")
+}
+
+#[cfg(feature = "owo-colors")]
+#[cfg(not(feature = "anstyle"))]
+pub fn bold_red<T: std::fmt::Display>(text: T) -> String {
+	use owo_colors::OwoColorize;
+	format!("{}", text.bold().red())
+}
+
+#[cfg(feature = "anstyle")]
+pub fn bold_green<T: std::fmt::Display>(text: T) -> String {
+	use anstyle::{AnsiColor, Style};
+	let style = Style::new().bold().fg_color(Some(anstyle::Color::Ansi(AnsiColor::Green)));
+	format!("{style}{text}{style:#}")
+}
+
+#[cfg(feature = "owo-colors")]
+#[cfg(not(feature = "anstyle"))]
+pub fn bold_green<T: std::fmt::Display>(text: T) -> String {
+	use owo_colors::OwoColorize;
+	format!("{}", text.bold().green())
+}
+
 /// Color text magenta
 #[cfg(feature = "anstyle")]
 pub fn magenta<T: std::fmt::Display>(text: T) -> String {

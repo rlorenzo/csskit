@@ -1,4 +1,4 @@
-use crate::{CliError, CliResult, GlobalConfig, commands::format_diagnostic_error};
+use crate::{CliError, CliResult, GlobalConfig, bold_green, bold_red, commands::format_diagnostic_error};
 use bumpalo::Bump;
 use clap::Args;
 use css_ast::CssAtomSet;
@@ -34,9 +34,7 @@ impl Check {
 		}
 
 		if input.is_empty() {
-			eprintln!("error: no CSS files to check");
-			eprintln!("usage: csskit check <rules.cks> <file1.css> [more.css...]");
-			print_sheet_arg_hint(sheet, false);
+			hint_no_input(sheet, &config);
 			return Err(CliError::ParseFailed);
 		}
 
@@ -51,7 +49,7 @@ impl Check {
 			if let Some(e) = rule_result.errors.first() {
 				eprintln!("{}", format_diagnostic_error(e, &rule_source, sheet));
 			}
-			print_sheet_arg_hint(sheet, true);
+			hint_bad_sheet(sheet, input, &config);
 			CliError::ParseFailed
 		})?;
 
@@ -128,12 +126,55 @@ impl Check {
 	}
 }
 
-fn print_sheet_arg_hint(sheet: &str, with_correction: bool) {
+/// Find the first `.cks` file in cwd, or fall back to `rules.cks`.
+fn find_cks_hint() -> String {
+	if let Ok(entries) = fs::read_dir(".") {
+		let mut names: Vec<String> = entries
+			.flatten()
+			.filter_map(|e| {
+				let name = e.file_name().to_string_lossy().into_owned();
+				name.ends_with(".cks").then_some(name)
+			})
+			.collect();
+		names.sort();
+		if let Some(name) = names.into_iter().next() {
+			return name;
+		}
+	}
+	"rules.cks".to_string()
+}
+
+fn maybe_color<F: Fn(&str) -> String>(colors: bool, s: &str, f: F) -> String {
+	if colors { f(s) } else { s.to_string() }
+}
+
+/// No CSS input files provided. The `sheet` arg may itself be a CSS file.
+fn hint_no_input(sheet: &str, config: &GlobalConfig) {
+	let colors = config.colors();
+	let error_label = maybe_color(colors, "error", |s| bold_red(s));
+	let help_label = maybe_color(colors, "help", |s| bold_green(s));
+	eprintln!("{}: no CSS files to check", error_label);
+	eprintln!();
+	eprintln!("{}: usage: csskit check <rules.cks> <file1.css> [more.css...]", help_label);
+
+	if sheet.ends_with(".css") {
+		let cks = find_cks_hint();
+		let cmd = format!("csskit check {cks} {sheet}");
+		let help_label = maybe_color(colors, "help", |s| bold_green(s));
+		eprintln!("{}: `{}` looks like a CSS file, did you mean `{}`?", help_label, sheet, maybe_color(colors, &cmd, |s| bold_green(s)));
+	}
+}
+
+/// Sheet arg failed to parse; may be a CSS file passed in the wrong position.
+fn hint_bad_sheet(sheet: &str, input: &[String], config: &GlobalConfig) {
 	if !sheet.ends_with(".css") {
 		return;
 	}
-	eprintln!("hint: `{sheet}` looks like a CSS file. The first argument is the csskit rule sheet (.cks).");
-	if with_correction {
-		eprintln!("      To check CSS files, pass a rule sheet first: csskit check rules.cks {sheet} [more.css...]");
-	}
+	let colors = config.colors();
+	let help_label = maybe_color(colors, "help", |s| bold_green(s));
+	let cks = find_cks_hint();
+	let all_css = std::iter::once(sheet).chain(input.iter().map(String::as_str)).collect::<Vec<_>>().join(" ");
+	let cmd = format!("csskit check {cks} {all_css}");
+	eprintln!();
+	eprintln!("{}: `{}` looks like a CSS file, did you mean `{}`?", help_label, sheet, maybe_color(colors, &cmd, |s| bold_green(s)));
 }

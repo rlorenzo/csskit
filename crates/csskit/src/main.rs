@@ -8,7 +8,7 @@ mod commands;
 mod errors;
 mod input;
 
-pub use color_ext::{bg, bold, dimmed, fg, green, magenta};
+pub use color_ext::{bg, bold, bold_green, bold_red, dimmed, fg, green, magenta, red};
 pub use input::{InputArgs, InputSource};
 
 #[derive(Debug, Args)]
