@@ -281,11 +281,11 @@ impl<'a> Peek<'a> for NeverMatch {
 }
 
 impl<'a> Parse<'a> for NeverMatch {
-	fn parse<I>(_p: &mut Parser<'a, I>) -> Result<Self>
+	fn parse<I>(p: &mut Parser<'a, I>) -> Result<Self>
 	where
 		I: Iterator<Item = Cursor> + Clone,
 	{
-		unreachable!("NeverMatch should never be parsed")
+		Err(Diagnostic::new(p.next(), Diagnostic::unexpected))?
 	}
 }
 
@@ -861,7 +861,7 @@ impl QuerySizePseudo {
 mod tests {
 	use super::{QueryCompoundSelector, QuerySelectorList};
 	use crate::CsskitAtomSet;
-	use css_parse::assert_parse;
+	use css_parse::{assert_parse, assert_parse_error};
 
 	#[test]
 	fn test_parse_simple_type() {
@@ -956,5 +956,30 @@ mod tests {
 	#[test]
 	fn test_parse_attribute_langprefix_operator() {
 		assert_parse!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "[name|=en]");
+	}
+
+	#[test]
+	fn test_parse_class_unsupported() {
+		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, ".foo");
+	}
+
+	#[test]
+	fn test_parse_pseudo_element_unsupported() {
+		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "::before");
+	}
+
+	#[test]
+	fn test_parse_functional_pseudo_element_unsupported() {
+		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "::part(foo)");
+	}
+
+	#[test]
+	fn test_parse_namespaced_type_unsupported() {
+		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "svg|*");
+	}
+
+	#[test]
+	fn test_parse_namespaced_wildcard_unsupported() {
+		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "*|*");
 	}
 }
