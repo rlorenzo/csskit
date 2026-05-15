@@ -36,6 +36,7 @@ impl<'a> Parse<'a> for ComponentValues<'a> {
 			if let Some(mut value) = p.parse_if_peek::<ComponentValue>()? {
 				if let ComponentValue::Delim(d) = value
 					&& last_was_whitespace
+					&& d.associated_whitespace().contains(AssociatedWhitespaceRules::EnforceAfter)
 				{
 					let rules = d.associated_whitespace() | AssociatedWhitespaceRules::EnforceBefore;
 					value = ComponentValue::Delim(d.with_associated_whitespace(rules))
