@@ -958,9 +958,6 @@ mod tests {
 		assert_parse!(CsskitAtomSet::ATOMS, QueryCompoundSelector, "[name|=en]");
 	}
 
-	// Selectors whose associated type is `NeverMatch` must surface a diagnostic
-	// from `NeverMatch::parse` rather than parse successfully.
-
 	#[test]
 	fn test_parse_class_unsupported() {
 		assert_parse_error!(CsskitAtomSet::ATOMS, QueryCompoundSelector, ".foo");
