@@ -161,7 +161,12 @@ fn hint_no_input(sheet: &str, config: &GlobalConfig) {
 		let cks = find_cks_hint();
 		let cmd = format!("csskit check {cks} {sheet}");
 		let help_label = maybe_color(colors, "help", |s| bold_green(s));
-		eprintln!("{}: `{}` looks like a CSS file, did you mean `{}`?", help_label, sheet, maybe_color(colors, &cmd, |s| bold_green(s)));
+		eprintln!(
+			"{}: `{}` looks like a CSS file, did you mean `{}`?",
+			help_label,
+			sheet,
+			maybe_color(colors, &cmd, |s| bold_green(s))
+		);
 	}
 }
 
@@ -176,5 +181,10 @@ fn hint_bad_sheet(sheet: &str, input: &[String], config: &GlobalConfig) {
 	let all_css = std::iter::once(sheet).chain(input.iter().map(String::as_str)).collect::<Vec<_>>().join(" ");
 	let cmd = format!("csskit check {cks} {all_css}");
 	eprintln!();
-	eprintln!("{}: `{}` looks like a CSS file, did you mean `{}`?", help_label, sheet, maybe_color(colors, &cmd, |s| bold_green(s)));
+	eprintln!(
+		"{}: `{}` looks like a CSS file, did you mean `{}`?",
+		help_label,
+		sheet,
+		maybe_color(colors, &cmd, |s| bold_green(s))
+	);
 }
